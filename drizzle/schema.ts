@@ -1,24 +1,24 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { integer, pgTable, text, timestamp, varchar, serial } from "drizzle-orm/pg-core";
 
 /**
  * Core user table backing auth flow.
  * Extend this file with additional tables as your product grows.
  * Columns use camelCase to match both database fields and generated types.
  */
-export const users = mysqlTable("users", {
+export const users = pgTable("users", {
   /**
    * Surrogate primary key. Auto-incremented numeric value managed by the database.
    * Use this for relations between tables.
    */
-  id: int("id").autoincrement().primaryKey(),
+  id: serial("id").primaryKey(),
   /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: varchar("role", { length: 20 }).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
@@ -28,15 +28,19 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * Faculty table for storing scraped faculty data
  */
-export const faculty = mysqlTable("faculty", {
-  id: int("id").autoincrement().primaryKey(),
+export const faculty = pgTable("faculty", {
+  id: serial("id").primaryKey(),
   fullName: text("fullName").notNull(),
   initials: varchar("initials", { length: 10 }).notNull().unique(),
   department: varchar("department", { length: 50 }).notNull().default("cse"),
   photoUrl: text("photoUrl"),
   profileUrl: text("profileUrl"),
+  email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 20 }),
+  room: varchar("room", { length: 50 }),
+  designation: text("designation"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Faculty = typeof faculty.$inferSelect;
@@ -45,14 +49,14 @@ export type InsertFaculty = typeof faculty.$inferInsert;
 /**
  * PDF cache table for storing parsed routine PDFs
  */
-export const pdfCache = mysqlTable("pdfCache", {
-  id: int("id").autoincrement().primaryKey(),
+export const pdfCache = pgTable("pdfCache", {
+  id: serial("id").primaryKey(),
   department: varchar("department", { length: 50 }).notNull(),
   pdfUrl: text("pdfUrl").notNull(),
   version: varchar("version", { length: 20 }).notNull().default("1.0"),
   parsedAt: timestamp("parsedAt").defaultNow().notNull(),
   expiresAt: timestamp("expiresAt").notNull(),
-  totalClasses: int("totalClasses").notNull().default(0),
+  totalClasses: integer("totalClasses").notNull().default(0),
 });
 
 export type PdfCache = typeof pdfCache.$inferSelect;
@@ -61,9 +65,9 @@ export type InsertPdfCache = typeof pdfCache.$inferInsert;
 /**
  * Class schedule table for storing individual class entries
  */
-export const classSchedules = mysqlTable("classSchedules", {
-  id: int("id").autoincrement().primaryKey(),
-  cacheId: int("cacheId").notNull(), // Foreign key to pdfCache
+export const classSchedules = pgTable("classSchedules", {
+  id: serial("id").primaryKey(),
+  cacheId: integer("cacheId").notNull(), // Foreign key to pdfCache
   day: varchar("day", { length: 20 }).notNull(),
   timeStart: varchar("timeStart", { length: 10 }).notNull(),
   timeEnd: varchar("timeEnd", { length: 10 }).notNull(),
